@@ -89,13 +89,13 @@ X_brca_test.drop(['tcga_id', 'subtype', 'sample_id', 'cancer_type'], axis="colum
 #############################
 ## 5-Fold Cross Validation ##
 #############################
-'''
+
 confusion_matrixes = []
 validation_set_percent = 0.1
 
 
-d_rates = [0.4]
-d_rates2 = [0.8]
+d_rates = [0, 0.2, 0.4, 0.6, 0.8]
+d_rates2 = [0, 0.2, 0.4, 0.6, 0.8]
 for drop in d_rates:
 	for drop2 in d_rates2:
 		print("DROPOUT RATE FOR INPUT LAYER: {}".format(drop))
@@ -187,7 +187,7 @@ for drop in d_rates:
 			classify_df = classify_df.append({"Fold":str(i), "accuracy":score[1]}, ignore_index=True)
 			history_df = pd.DataFrame(fit_hist.history)
 
-			filename="../results/VAE/{}_hidden_{}_emb/history/archs4_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_history_{}_cv_final.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, i)
+			filename="../results/VAE/2nd_run/{}_hidden_{}_emb/history/archs4_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_history_{}_cv_2nd_run.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, i)
 			#history_df.to_csv(filename, sep=',')
 			i+=1
 
@@ -209,7 +209,7 @@ for drop in d_rates:
 		classify_df = classify_df.assign(classifier_loss="categorical_crossentropy")
 		classify_df = classify_df.assign(reconstruction_loss=reconstruction_loss)
 
-		output_filename="../results/VAE/{}_hidden_{}_emb/archs4_brca_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_cv_final.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
+		output_filename="../results/VAE/2nd_run/{}_hidden_{}_emb/archs4_brca_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_cv_2nd_run.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
 
 
 		classify_df.to_csv(output_filename, sep=',')
@@ -314,4 +314,4 @@ output_filename="../results/VAE/{}_hidden_{}_emb/archs4_brca_classifier_dropout_
 
 
 classify_df.to_csv(output_filename, sep=',')
-
+'''

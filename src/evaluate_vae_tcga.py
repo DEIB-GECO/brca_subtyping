@@ -222,7 +222,7 @@ for drop in d_rates:
 classify_df = pd.DataFrame(columns=["accuracy"])
 
 # Prepare data to train Variational Autoencoder (merge dataframes and normalize)
-X_autoencoder = pd.concat([X_train, X_brca_train], sort=True)
+X_autoencoder = pd.concat([X_brca_train, X_tcga_no_train], sort=True)
 scaler = MinMaxScaler()
 X_autoencoder_scaled = pd.DataFrame(scaler.fit_transform(X_autoencoder), columns=X_autoencoder.columns)
 
