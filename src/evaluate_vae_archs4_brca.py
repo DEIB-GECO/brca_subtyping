@@ -159,6 +159,10 @@ for drop in d_rates:
 			y_labels_val = pd.DataFrame(enc.fit_transform(y_val.values.reshape(-1, 1)))
 	    
 			X_train_train, X_train_val, y_labels_train_train, y_labels_train_val = train_test_split(X_train, y_labels_train, test_size=0.2, stratify=y_train, random_state=42)
+			history_df = vae.hist_dataframe
+			filename="../results/VAE/2nd_run/{}_hidden_{}_emb/history/archs4_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_history_{}_cv_2nd_run.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, i)
+			
+			history_df.to_csv(filename, sep=',')
 
 			print("BUILDING CLASSIFIER")
 			vae.build_classifier()
@@ -187,8 +191,6 @@ for drop in d_rates:
 			classify_df = classify_df.append({"Fold":str(i), "accuracy":score[1]}, ignore_index=True)
 			history_df = pd.DataFrame(fit_hist.history)
 
-			filename="../results/VAE/2nd_run/{}_hidden_{}_emb/history/archs4_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_history_{}_cv_2nd_run.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, i)
-			#history_df.to_csv(filename, sep=',')
 			i+=1
 
 		print('5-Fold results: {}'.format(scores))
