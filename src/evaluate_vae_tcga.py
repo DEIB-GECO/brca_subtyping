@@ -93,7 +93,7 @@ X_brca_test.drop(['tcga_id', 'subtype', 'sample_id', 'cancer_type'], axis="colum
 confusion_matrixes = []
 validation_set_percent = 0.1
 
-'''
+
 d_rates = [0.4]
 d_rates2 = [0.8]
 for drop in d_rates:
@@ -292,4 +292,4 @@ output_filename="../results/VAE/{}_hidden_{}_emb/tcga_classifier_dropout_{}_in_{
 
 classify_df.to_csv(output_filename, sep=',')
 
-
+'''

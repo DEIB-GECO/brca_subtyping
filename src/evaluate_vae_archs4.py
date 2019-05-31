@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import OneHotEncoder
 from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.metrics import confusion_matrix
+import sys
 
 import argparse
 
@@ -111,7 +112,7 @@ for train_index, test_index in skf.split(X_brca_train, y_brca_train):
 	# Prepare data to train Variational Autoencoder (merge dataframes and normalize)
 	X_autoencoder = pd.concat([X_train, X_archs4], sort=True)
 	scaler = MinMaxScaler()
-	X_autoencoder_scaled = pd.DataFrame(scaler.fit_transform(X_autoencoder), columns=X_autoencoder.columns)
+	X_autoencoder_scaled = pd.DataFrame(scaler.fit_transform(X_archs4), columns=X_archs4.columns)
 
 	# Scale logistic regression data
 	X_train = pd.DataFrame(scaler.transform(X_train), columns=X_train.columns)
@@ -145,7 +146,10 @@ for train_index, test_index in skf.split(X_brca_train, y_brca_train):
 
 	vae.initialize_model()
 	vae.train_vae(train_df=X_autoencoder_train, val_df=X_autoencoder_val)
-
+    
+    vae.save("../models/vae_300in_100lat_0.6drop_in_0.6drop_hidden_0.001lr_100epochs_full_archs4.h5")
+    sys.exit("VAE trained and weights are stored")
+    
 	# Build and train stacked classifier
 	enc = OneHotEncoder(sparse=False)
 	y_labels_train = enc.fit_transform(y_train.values.reshape(-1, 1))

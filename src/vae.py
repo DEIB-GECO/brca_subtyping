@@ -127,7 +127,7 @@ class VAE(BaseVAE):
 
 		# Compile Encoder
 		self.encoder = Model(self.inputs, [self.z_mean_encoded, self.z_log_var_encoded], name="encoder")
-
+		'''
 		# Compile Decoder
 		decoder_input = Input(shape=(self.latent_dim,), name='z_sampling')
 
@@ -142,7 +142,7 @@ class VAE(BaseVAE):
 				X_decoded = self.decoder_output(x_hidden)
 
 		self.decoder = Model(decoder_input, x_decoded, name='decoder')
-
+		'''
 
 	def _compile_vae(self):
 		"""
