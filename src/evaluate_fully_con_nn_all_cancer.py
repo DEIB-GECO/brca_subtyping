@@ -30,7 +30,7 @@ sess = tf.Session(config=
                intra_op_parallelism_threads=parallelization_factor,
 #                    device_count = {'CPU': parallelization_factor},
 ))
-
+'''
 hidden_dim_1 = 300
 hidden_dim_2 = 100
 epochs = 100
@@ -42,7 +42,7 @@ learning_rate = 0.01
 ###############
 
 
-X_all_train = pd.read_pickle("../data/tcga_raw_all_labelled_19036_row_log_norm_train.pkl")
+X_all_train = pd.read_pickle("../data/tcga_raw_all_labelled_no_random_brca_19036_row_log_norm_train.pkl")
 
 y_all_train = X_all_train["subtype"]
 
@@ -125,26 +125,28 @@ for drop1 in d_rates1:
 		classify_df.to_csv(output_filename, sep=',')
 
 
-
-
-
 '''
-dropout_input = 0.8
-dropout_hidden = 0.4
+
+
+
+dropout_input = 0.5
+dropout_hidden = 0.6
 hidden_dim_1 = 300
 hidden_dim_2 = 100
 epochs = 100
 batch_size = 50
-learning_rate = 0.001
+learning_rate = 0.01
 
 ###############
 ## Load Data ##
 ###############
 
+X_all_train = pd.read_pickle("../data/tcga_raw_all_labelled_no_random_brca_19036_row_log_norm_train.pkl")
 
-X_brca_train = pd.read_pickle("../data/tcga_brca_raw_19036_row_log_norm_train.pkl")
-y_brca_train = X_brca_train["Ciriello_subtype"]
-X_brca_train.drop(['tcga_id', 'Ciriello_subtype', 'sample_id', 'cancer_type'], axis="columns", inplace=True)
+y_all_train = X_all_train["subtype"]
+
+X_all_train.drop(['subtype'], axis="columns", inplace=True)
+
 
 X_brca_test= pd.read_pickle("../data/tcga_brca_raw_19036_row_log_norm_test.pkl")
 y_brca_test = X_brca_test["subtype"]
@@ -157,16 +159,21 @@ classify_df = pd.DataFrame(columns=["accuracy"])
 
 scaler = MinMaxScaler()
 
-X_train = pd.DataFrame(scaler.fit_transform(X_brca_train), columns=X_brca_train.columns)
+X_train = pd.DataFrame(scaler.fit_transform(X_all_train), columns=X_all_train.columns)
 X_test = pd.DataFrame(scaler.transform(X_brca_test), columns=X_brca_test.columns)
 
 enc = OneHotEncoder(sparse=False)
 y_labels_train = enc.fit_transform(y_brca_train.values.reshape(-1, 1))
 y_labels_test = pd.DataFrame(enc.fit_transform(y_brca_test.values.reshape(-1, 1)))
 
-X_train_train, X_train_val, y_labels_train_train, y_labels_train_val = train_test_split(X_train, y_labels_train, test_size=0.1, stratify=y_brca_train, random_state=42)
+X_train_train, X_train_val, y_labels_train_train, y_labels_train_val = train_test_split(X_train, y_labels_train, test_size=0.1, stratify=y_all_train, random_state=42)
 
+print(y_labels_train)
+print("NOW THE ONES FOR TEST")
+print(y_labels_test)
 
+import sys
+sys.exit()
 
 inputs = Input(shape=(X_train.shape[1], ), name="encoder_input")
 dropout_in = Dropout(rate=dropout_input)(inputs)
@@ -177,7 +184,7 @@ dropout_hidden1 = Dropout(rate=dropout_hidden)(hidden1_encoded)
 hidden2_dense = Dense(hidden_dim_2)(dropout_hidden1)
 hidden2_batchnorm = BatchNormalization()(hidden2_dense)
 hidden2_encoded = Activation("relu")(hidden2_batchnorm)
-out = Dense(5, activation="softmax")(hidden2_encoded)
+out = Dense(37, activation="softmax")(hidden2_encoded)
 
 model = Model(inputs, out, name="fully_con_nn")
 
@@ -213,8 +220,8 @@ classify_df = classify_df.assign(learning_rate=learning_rate)
 classify_df = classify_df.assign(dropout_input=dropout_input)
 classify_df = classify_df.assign(dropout_hidden=dropout_hidden)
 
-output_filename="../results/fully_con/all_subtype/{}_hidden_{}_emb_tcga_classifier_dropout_{}_in_{}_hidden_test_set_final_2.csv".format(hidden_dim_1, hidden_dim_2, dropout_input, dropout_hidden)
+output_filename="../results/fully_con/all_cancer/{}_hidden_{}_emb_tcga_classifier_dropout_{}_in_{}_hidden_test_set_final.csv".format(hidden_dim_1, hidden_dim_2, dropout_input, dropout_hidden)
 
 
 classify_df.to_csv(output_filename, sep=',')
-'''
+
