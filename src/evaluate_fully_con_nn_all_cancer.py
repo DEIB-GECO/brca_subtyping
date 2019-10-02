@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 
+import sys
+
 import matplotlib.pyplot as plt
 
 import tensorflow as tf
@@ -163,17 +165,16 @@ X_train = pd.DataFrame(scaler.fit_transform(X_all_train), columns=X_all_train.co
 X_test = pd.DataFrame(scaler.transform(X_brca_test), columns=X_brca_test.columns)
 
 enc = OneHotEncoder(sparse=False)
-y_labels_train = enc.fit_transform(y_brca_train.values.reshape(-1, 1))
+y_labels_train = enc.fit_transform(y_all_train.values.reshape(-1, 1))
 y_labels_test = pd.DataFrame(enc.fit_transform(y_brca_test.values.reshape(-1, 1)))
+
+for j in range(len(np.unique(y_all_train.values))):
+        if j not in (2,11,16,17,22): #subtypes
+            y_labels_test.insert(j, "Dummy"+str(j), 0)
 
 X_train_train, X_train_val, y_labels_train_train, y_labels_train_val = train_test_split(X_train, y_labels_train, test_size=0.1, stratify=y_all_train, random_state=42)
 
-print(y_labels_train)
-print("NOW THE ONES FOR TEST")
-print(y_labels_test)
-
-import sys
-sys.exit()
+#subtypes on the one-hot encoding are 2, 11, 16, 17, 22
 
 inputs = Input(shape=(X_train.shape[1], ), name="encoder_input")
 dropout_in = Dropout(rate=dropout_input)(inputs)
@@ -184,12 +185,13 @@ dropout_hidden1 = Dropout(rate=dropout_hidden)(hidden1_encoded)
 hidden2_dense = Dense(hidden_dim_2)(dropout_hidden1)
 hidden2_batchnorm = BatchNormalization()(hidden2_dense)
 hidden2_encoded = Activation("relu")(hidden2_batchnorm)
-out = Dense(37, activation="softmax")(hidden2_encoded)
-
+outLayer = Dense(37, activation="softmax")
+out = outLayer(hidden2_encoded)
 model = Model(inputs, out, name="fully_con_nn")
 
 adam = optimizers.Adam(lr=learning_rate)
 model.compile(loss='categorical_crossentropy', optimizer=adam, metrics=['accuracy'])
+
 
 model.fit(x=X_train_train, 
 			y=y_labels_train_train,
@@ -199,10 +201,21 @@ model.fit(x=X_train_train,
 			callbacks=[EarlyStopping(monitor='val_loss', patience=20, restore_best_weights=True)],
 			validation_data=(X_train_val, y_labels_train_val))
 
+new_weights = np.empty([100,37])
+biases = outLayer.get_weights()[1]
+for i in range(len(outLayer.get_weights()[0])):
+	weights = outLayer.get_weights()[0][i]
+	for j in range(len(weights)):
+		if j not in (2,11,16,17,22): #subtypes
+			weights[j]=0
+	new_weights[i] = weights
+
+outLayer.set_weights([new_weights,biases])
+
 score = model.evaluate(X_test, y_labels_test)
 conf_matrix = pd.DataFrame(confusion_matrix(y_labels_test.values.argmax(axis=1), model.predict(X_test).argmax(axis=1)))
 
-conf_matrix.to_csv("../feed_forward_300_100_conf_matrix.csv")
+conf_matrix.to_csv("../results/fully_con/all_cancer/feed_forward_300_100_conf_matrix_test.csv")
 
 classify_df = classify_df.append({"accuracy":score[1]}, ignore_index=True)
 print(score)
