@@ -37,21 +37,22 @@ sess = tf.Session(config=
 hidden_dim_1 = 300
 hidden_dim_2 = 100
 epochs = 100
-batch_size = 200
+batch_size = 50
 
-learning_rate = 0.01
+learning_rate = 0.001
 
 ###############
 ## Load Data ##
 ###############
 
-X_brca_train = pd.read_csv("../data/miRNA_filtered_norm_minmax_scaled_train.csv")
+#X_brca_train = pd.read_csv("../data/miRNA_filtered_norm_scaled_train.csv")
+X_brca_train = pd.read_pickle("../data/hybrids/tcga_brca_mirna_rna_meta_train.pkl")
 
 y_brca_train = X_brca_train["Ciriello_subtype"]
 
-X_brca_train.drop(['Ciriello_subtype'], axis="columns", inplace=True)
+X_brca_train.drop(['tcga_id','Ciriello_subtype'], axis="columns", inplace=True)
 
-d_rates1 = [0, 0.2, 0.4, 0.5, 0.6, 0.8]
+d_rates1 = [0.8]
 d_rates2 = [0, 0.2, 0.4, 0.5, 0.6, 0.8]
 for drop1 in d_rates1:
 	for drop2 in d_rates2:
@@ -62,6 +63,7 @@ for drop1 in d_rates1:
 		scores = []
 		i=1
 		classify_df = pd.DataFrame(columns=["Fold", "accuracy"])
+		conf_matrix = np.zeros([5,5])
 
 		for train_index, test_index in skf.split(X_brca_train, y_brca_train):
 			print('Fold {} of {}'.format(i, skf.n_splits))
@@ -76,8 +78,9 @@ for drop1 in d_rates1:
 			enc = OneHotEncoder(sparse=False)
 			y_labels_train = enc.fit_transform(y_train.values.reshape(-1, 1))
 			y_labels_val = pd.DataFrame(enc.fit_transform(y_val.values.reshape(-1, 1)))
+			y_labels_val_conf = enc.fit_transform(y_val.values.reshape(-1, 1))
 
-			X_train_train, X_train_val, y_labels_train_train, y_labels_train_val = train_test_split(X_train, y_labels_train, test_size=0.2, stratify=y_train, random_state=42)
+			X_train_train, X_train_val, y_labels_train_train, y_labels_train_val = train_test_split(X_train, y_labels_train, test_size=0.1, stratify=y_train, random_state=42)
 
 
 
@@ -115,10 +118,16 @@ for drop1 in d_rates1:
 			plt.xlabel('Epoch')
 			plt.legend(['Train', 'Test'], loc='upper left')
 			i+=1
+            
+			conf = confusion_matrix(y_labels_val_conf.argmax(axis=1), model.predict(X_val).argmax(axis=1))
+			print(conf)
+			print(type(conf))
+			conf_matrix = np.add(conf_matrix, conf)
+			print(conf_matrix)
 
 		print('5-Fold results: {}'.format(scores))
 		print('Average accuracy: {}'.format(np.mean(scores)))
-		plt.savefig('history_miRNA_ffnn_{}_in_{}_hidden.png'.format(dropout_input, dropout_hidden))
+		plt.savefig('../results/miRNA+RNA/fully_con/history_miRNA_rna_ffnn_{}_in_{}_hidden_100_20.png'.format(dropout_input, dropout_hidden))
 		plt.clf()
 
 		classify_df = classify_df.assign(mean_accuracy=np.mean(scores))
@@ -130,10 +139,14 @@ for drop1 in d_rates1:
 		classify_df = classify_df.assign(dropout_input=dropout_input)
 		classify_df = classify_df.assign(dropout_hidden=dropout_hidden)
 
-		output_filename="../results/miRNA/fully_con/{}_hidden_{}_emb_tcga_classifier_dropout_{}_in_{}_hidden_batch_{}_lrate_{}_cv.csv".format(hidden_dim_1, hidden_dim_2, dropout_input, dropout_hidden, batch_size, learning_rate)
-
+		output_filename="../results/miRNA+RNA/fully_con/{}_hidden_{}_emb_tcga_classifier_dropout_{}_in_{}_hidden_batch_{}_lrate_{}_cv.csv".format(hidden_dim_1, hidden_dim_2, dropout_input, dropout_hidden, batch_size, learning_rate)
+		conf_filename="../results/miRNA+RNA/fully_con/confusion_matrix/{}_hidden_{}_emb_tcga_classifier_dropout_{}_in_{}_hidden_batch_{}_lrate_{}_cv_confusion_matrix.csv".format(hidden_dim_1, hidden_dim_2, dropout_input, dropout_hidden, batch_size, learning_rate)
 
 		classify_df.to_csv(output_filename, sep=',')
+		confs_matrix = pd.DataFrame(conf_matrix)
+		confs_matrix.to_csv(conf_filename, sep=',')  
+		# Put to 0 for next cv iteration
+		conf_matrix = np.zeros([5,5])
 
 
 
