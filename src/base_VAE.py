@@ -65,3 +65,21 @@ class BaseVAE():
 		return K.mean(reconstruction_loss + kl_loss)
 
 
+	def save_model(self):
+		model_json = self.to_json()
+		model_name = "../models/vae_{}_hidden_{}_emb_{}_drop_in_{}_drop_hidden_structure.json".format(self.intermediate_dim, self.latent_dim, self.dropout_rate_input, self.dropout_rate_hidden)
+		with open(model_name, "w") as json_file:
+			json_file.write(model_json)
+		# serialize weights to HDF5
+		weights_name = "../models/vae_{}_hidden_{}_emb_{}_drop_in_{}_drop_hidden_model.h5".format(self.intermediate_dim, self.latent_dim, self.dropout_rate_input, self.dropout_rate_hidden)
+		model.save_weights(weights_name.h5)
+		print("Saved model to disk")
+        
+	def load_model(self, model_name):
+		json_file = open('../models/'+model_name+'_structure.json', 'r')
+		loaded_model_json = json_file.read()
+		json_file.close()
+		loaded_model = model_from_json(loaded_model_json)
+		# load weights into new model
+		loaded_model.load_weights('../models/'+model_name+'_model.h5')
+		print("Loaded model from disk")

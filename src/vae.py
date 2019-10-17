@@ -198,6 +198,7 @@ class VAE(BaseVAE):
 		return score
 
 
+
 class CVAE(BaseVAE):
 
 	"""

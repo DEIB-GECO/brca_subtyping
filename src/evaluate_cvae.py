@@ -115,7 +115,7 @@ for train_index, test_index in skf.split(X_brca_train, y_brca_train):
 	scaler = MinMaxScaler()
 	X_autoencoder_scaled = pd.DataFrame(scaler.fit_transform(X_autoencoder), columns=X_autoencoder.columns)
 
-	# Scale logistic regression data
+	# Scale data
 	X_train = pd.DataFrame(scaler.transform(X_train), columns=X_train.columns)
 	X_val = pd.DataFrame(scaler.transform(X_val), columns=X_val.columns)
 

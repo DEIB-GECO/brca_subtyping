@@ -94,8 +94,8 @@ confusion_matrixes = []
 validation_set_percent = 0.1
 
 
-d_rates = [0, 0.2, 0.4, 0.6, 0.8]
-d_rates2 = [0, 0.2, 0.4, 0.6, 0.8]
+d_rates = [0.6]
+d_rates2 = [0.8]
 for drop in d_rates:
 	for drop2 in d_rates2:
 		print("DROPOUT RATE FOR INPUT LAYER: {}".format(drop))
@@ -106,6 +106,7 @@ for drop in d_rates:
 		scores = []
 		i=1
 		classify_df = pd.DataFrame(columns=["Fold", "accuracy"])
+		conf_matrix = np.zeros([5,5])
 
 		for train_index, test_index in skf.split(X_brca_train, y_brca_train):
 			print('Fold {} of {}'.format(i, skf.n_splits))
@@ -160,7 +161,7 @@ for drop in d_rates:
 	    
 			X_train_train, X_train_val, y_labels_train_train, y_labels_train_val = train_test_split(X_train, y_labels_train, test_size=0.2, stratify=y_train, random_state=42)
 			history_df = vae.hist_dataframe
-			filename="../results/VAE/2nd_run/{}_hidden_{}_emb/history/archs4_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_history_{}_cv_2nd_run.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, i)
+			filename="../results/run2_for_conf_matrix/VAE/{}_hidden_{}_emb/history/archs4_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_history_{}_cv_2nd_run.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, i)
 			
 			history_df.to_csv(filename, sep=',')
 
@@ -187,9 +188,19 @@ for drop in d_rates:
 
 			print(score)
 			scores.append(score[1])
+            
+			y_labels_val_conf = enc.fit_transform(y_val.values.reshape(-1, 1))
 
 			classify_df = classify_df.append({"Fold":str(i), "accuracy":score[1]}, ignore_index=True)
 			history_df = pd.DataFrame(fit_hist.history)
+			conf = confusion_matrix(y_labels_val_conf.argmax(axis=1), vae.classifier.predict(X_val).argmax(axis=1))
+			print(conf)
+			print(type(conf))
+			conf_matrix = np.add(conf_matrix, conf)
+			print(conf_matrix)
+
+			filename="../results/run2_for_conf_matrix/VAE/{}_hidden_{}_emb/history/archs4_brca_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_history_{}_classifier_frozen_{}_cv.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, i, vae.freeze_weights)
+			history_df.to_csv(filename, sep=',')
 
 			i+=1
 
@@ -211,10 +222,17 @@ for drop in d_rates:
 		classify_df = classify_df.assign(classifier_loss="categorical_crossentropy")
 		classify_df = classify_df.assign(reconstruction_loss=reconstruction_loss)
 
-		output_filename="../results/VAE/2nd_run/{}_hidden_{}_emb/archs4_brca_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_cv_2nd_run.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
+		output_filename="../results/run2_for_conf_matrix/VAE/{}_hidden_{}_emb/archs4_brca_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_cv_2nd_run.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
 
+		conf_filename="../results/run2_for_conf_matrix/VAE/{}_hidden_{}_emb/confusion_matrix/archs4_brca_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_cv_confusion_matrix.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
 
 		classify_df.to_csv(output_filename, sep=',')
+		confs_matrix = pd.DataFrame(conf_matrix)
+		confs_matrix.to_csv(conf_filename, sep=',')  
+		# Put to 0 for next cv iteration
+		conf_matrix = np.zeros([5,5])
+
+
 
 '''
 

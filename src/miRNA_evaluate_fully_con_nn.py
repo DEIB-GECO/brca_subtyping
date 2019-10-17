@@ -34,12 +34,12 @@ sess = tf.Session(config=
 #dropout_input = 0.2
 #dropout_hidden = 0.2
 
-hidden_dim_1 = 300
-hidden_dim_2 = 100
+hidden_dim_1 = 100
+hidden_dim_2 = 20
 epochs = 100
-batch_size = 50
+batch_size = 200
 
-learning_rate = 0.001
+learning_rate = 0.01
 
 ###############
 ## Load Data ##
