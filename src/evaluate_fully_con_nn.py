@@ -35,11 +35,11 @@ sess = tf.Session(config=
 
 #dropout_input = 0.2
 #dropout_hidden = 0.2
-hidden_dim_1 = 100
-hidden_dim_2 = 20
+hidden_dim_1 = 300
+hidden_dim_2 = 100
 epochs = 100
-batch_size = 200
-learning_rate = 0.01
+batch_size = 50
+learning_rate = 0.001
 
 ###############
 ## Load Data ##
@@ -63,8 +63,6 @@ for drop1 in d_rates1:
 		dropout_hidden = drop2
 		skf = StratifiedKFold(n_splits=5)
 		scores = []
-		precisions = []
-		full_report = []
 		i=1
 		classify_df = pd.DataFrame(columns=["Fold", "accuracy"])
 		conf_matrix = np.zeros([5,5])
