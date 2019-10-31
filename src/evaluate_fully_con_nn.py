@@ -11,8 +11,10 @@ from tensorflow.keras.callbacks import EarlyStopping
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.preprocessing import OneHotEncoder, MinMaxScaler
 from tensorflow.python.keras.callbacks import TensorBoard
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, classification_report
 from time import time
+
+import keras_metrics
 
 from IPython.display import SVG
 
@@ -30,7 +32,7 @@ sess = tf.Session(config=
                intra_op_parallelism_threads=parallelization_factor,
 #                    device_count = {'CPU': parallelization_factor},
 ))
-'''
+
 #dropout_input = 0.2
 #dropout_hidden = 0.2
 hidden_dim_1 = 100
@@ -50,7 +52,9 @@ y_brca_train = X_brca_train["Ciriello_subtype"]
 
 X_brca_train.drop(['tcga_id', 'Ciriello_subtype', 'sample_id', 'cancer_type'], axis="columns", inplace=True)
 
-d_rates1 = [0.8]
+subtypes = ["Basal", "Her2", "LumA", "LumB", "Normal"]
+
+d_rates1 = [0, 0.2, 0.4, 0.5, 0.6, 0.8]
 d_rates2 = [0, 0.2, 0.4, 0.5, 0.6, 0.8]
 for drop1 in d_rates1:
 	for drop2 in d_rates2:
@@ -59,8 +63,11 @@ for drop1 in d_rates1:
 		dropout_hidden = drop2
 		skf = StratifiedKFold(n_splits=5)
 		scores = []
+		precisions = []
+		full_report = []
 		i=1
 		classify_df = pd.DataFrame(columns=["Fold", "accuracy"])
+		conf_matrix = np.zeros([5,5])
 
 		for train_index, test_index in skf.split(X_brca_train, y_brca_train):
 			print('Fold {} of {}'.format(i, skf.n_splits))
@@ -75,6 +82,7 @@ for drop1 in d_rates1:
 			enc = OneHotEncoder(sparse=False)
 			y_labels_train = enc.fit_transform(y_train.values.reshape(-1, 1))
 			y_labels_val = pd.DataFrame(enc.fit_transform(y_val.values.reshape(-1, 1)))
+			y_labels_val_conf = enc.fit_transform(y_val.values.reshape(-1, 1))
 
 			X_train_train, X_train_val, y_labels_train_train, y_labels_train_val = train_test_split(X_train, y_labels_train, test_size=0.2, stratify=y_train, random_state=42)
 
@@ -104,9 +112,14 @@ for drop1 in d_rates1:
 						callbacks=[EarlyStopping(monitor='val_loss', patience=20, restore_best_weights=True)],
 						validation_data=(X_train_val, y_labels_train_val))
 			score = model.evaluate(X_val, y_labels_val)
-			classify_df = classify_df.append({"Fold":str(i), "accuracy":score[1]}, ignore_index=True)
+            
+			report = classification_report(y_labels_val_conf.argmax(axis=1), model.predict(X_val).argmax(axis=1), target_names=subtypes, output_dict=True)    
+			classify_df = classify_df.append({"Fold":str(i), "accuracy":score[1], "other_metrics":report}, ignore_index=True)
 			print(score)
 			scores.append(score[1])
+            
+			conf = confusion_matrix(y_labels_val_conf.argmax(axis=1), model.predict(X_val).argmax(axis=1))
+			conf_matrix = np.add(conf_matrix, conf)
 			i+=1
 
 		print('5-Fold results: {}'.format(scores))
@@ -121,16 +134,21 @@ for drop1 in d_rates1:
 		classify_df = classify_df.assign(dropout_input=dropout_input)
 		classify_df = classify_df.assign(dropout_hidden=dropout_hidden)
 
-		output_filename="../results/fully_con/all_subtype/{}_hidden_{}_emb_tcga_classifier_dropout_{}_in_{}_hidden_cv.csv".format(hidden_dim_1, hidden_dim_2, dropout_input, dropout_hidden)
+		output_filename="../results/run2_for_conf_matrix/fully_con/{}_hidden_{}_emb_tcga_classifier_dropout_{}_in_{}_hidden_cv.csv".format(hidden_dim_1, hidden_dim_2, dropout_input, dropout_hidden)
 
-
+		conf_filename="../results/run2_for_conf_matrix/fully_con/confusion_matrix/{}_hidden_{}_emb_tcga_classifier_dropout_{}_in_{}_hidden_cv_confusion_matrix.csv".format(hidden_dim_1, hidden_dim_2, dropout_input, dropout_hidden)
+        
+		confs_matrix = pd.DataFrame(conf_matrix)
+		confs_matrix.to_csv(conf_filename, sep=',')
 		classify_df.to_csv(output_filename, sep=',')
+		# Put to 0 for next cv iteration
+		conf_matrix = np.zeros([5,5])
+
+
+
+
 
 '''
-
-
-
-
 dropout_input = 0.8
 dropout_hidden = 0.4
 hidden_dim_1 = 300
@@ -219,4 +237,4 @@ output_filename="../results/fully_con/all_subtype/{}_hidden_{}_emb_tcga_classifi
 
 
 classify_df.to_csv(output_filename, sep=',')
-
+'''
