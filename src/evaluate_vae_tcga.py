@@ -91,7 +91,10 @@ X_brca_train.drop(['Ciriello_subtype'], axis="columns", inplace=True)
 #X_brca_test = pd.read_pickle("../data/tcga_brca_raw_19036_row_log_norm_test.pkl")
 #y_brca_test = X_brca_test["subtype"]
 
-#X_brca_test.drop(['tcga_id', 'subtype', 'sample_id', 'cancer_type'], axis="columns", inplace=True)
+X_brca_test = pd.read_csv("../data/miRNA_filtered_norm_scaled_test.csv")
+y_brca_test = X_brca_test["expert_PAM50_subtypes"]
+
+X_brca_test.drop(['expert_PAM50_subtypes'], axis="columns", inplace=True)
 
 #############################
 ## 5-Fold Cross Validation ##
@@ -101,11 +104,11 @@ confusion_matrixes = []
 validation_set_percent = 0.1
 subtypes = ["Basal", "Her2", "LumA", "LumB", "Normal"]
 
+'''
 
 
-
-d_rates = [0.8]
-d_rates2 = [0.2]
+d_rates = [0.4]
+d_rates2 = [0.8]
 for drop in d_rates:
 	for drop2 in d_rates2:
 		print("DROPOUT RATE FOR INPUT LAYER: {}".format(drop))
@@ -238,6 +241,7 @@ for drop in d_rates:
 		conf_matrix = np.zeros([5,5])
 
 '''
+
 #################################
 ## Build and train final model ##
 #################################
@@ -245,7 +249,7 @@ for drop in d_rates:
 classify_df = pd.DataFrame(columns=["accuracy"])
 
 # Prepare data to train Variational Autoencoder (merge dataframes and normalize)
-X_autoencoder = pd.concat([X_brca_train, X_tcga_no_train], sort=True)
+X_autoencoder = pd.concat([X_brca_train, X_tcga_no_brca], sort=True)
 scaler = MinMaxScaler()
 X_autoencoder_scaled = pd.DataFrame(scaler.fit_transform(X_autoencoder), columns=X_autoencoder.columns)
 
@@ -295,9 +299,12 @@ fit_hist = vae.classifier.fit(x=X_train_train,
 score = vae.classifier.evaluate(X_brca_test_scaled, y_labels_test)
 conf_matrix = pd.DataFrame(confusion_matrix(y_labels_test.argmax(axis=1), vae.classifier.predict(X_brca_test_scaled).argmax(axis=1)))
 
-conf_matrix.to_csv("../results/VAE/{}_hidden_{}_emb/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_classifier_frozen_{}_confusion_matrix.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, freeze_weights))
+report = classification_report(y_labels_test.argmax(axis=1), vae.classifier.predict(X_brca_test_scaled).argmax(axis=1), target_names=subtypes, output_dict=True)
+
+conf_matrix.to_csv("../results/VAE/{}_hidden_{}_emb/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_classifier_frozen_{}_confusion_matrix_test_other_metrics.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, freeze_weights))
 
 classify_df = classify_df.append({"accuracy":score[1]}, ignore_index=True)
+classify_df = classify_df.append({"other_metrics":report}, ignore_index=True)
 classify_df = classify_df.assign(intermediate_dim=hidden_dim)
 classify_df = classify_df.assign(latent_dim=latent_dim)
 classify_df = classify_df.assign(batch_size=batch_size)
@@ -311,8 +318,7 @@ classify_df = classify_df.assign(classifier_use_z=classifier_use_z)
 classify_df = classify_df.assign(classifier_loss="categorical_crossentropy")
 classify_df = classify_df.assign(reconstruction_loss=reconstruction_loss)
 
-output_filename="../results/VAE/{}_hidden_{}_emb/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_classifier_final_test.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
+output_filename="../results/VAE/{}_hidden_{}_emb/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_classifier_final_test_other_metrics.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
 
 classify_df.to_csv(output_filename, sep=',')
 
-'''

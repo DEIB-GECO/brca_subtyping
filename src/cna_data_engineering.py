@@ -21,7 +21,6 @@ final_cna_df = pd.DataFrame()
 
 check = False
 
-th = 0.8
 max_ = 0
 min_ = 0
 min_pos = 10000000
@@ -97,8 +96,11 @@ for file_name in tqdm(files):
 
 chromosomes = ['chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7', 'chr8', 'chr9', 'chr10', 'chr11', 'chr12', 'chr13', 'chr14', 'chr15', 'chr16', 'chr17', 'chr18', 'chr19', 'chr20', 'chr21', 'chr22', 'chrX']
 
-for chr_now in tqdm(chromosomes):
-
+for chr_idx in tqdm(list(range(1,23))+list("X")):
+    
+    th = 0.6 if chr_idx == "X" else 0.8
+    
+    chr_now = 'chr'+str(chr_idx)
     chr_positions =sorted(map(lambda x : x[1], filter(lambda x : x[0] == chr_now, d_new.keys())))
     df = pd.DataFrame(index = chr_positions)
     indexes = df.index
@@ -145,11 +147,14 @@ for chr_now in tqdm(chromosomes):
     init_idx = 0
         
     for col_idx in tqdm(df[(df[0] < th)].index):
-        final_cna_df[chr_now+"_"+str(all_series.columns[init_idx])+":"+str(all_series.columns[col_idx])] = all_series.iloc[:,init_idx:col_idx].mean(axis=1)
-        init_idx = col_idx+1
+        print(col_idx)
+        
+        final_cna_df[chr_now+"_"+str(all_series.columns[init_idx] + np.sign(init_idx) )+":"+str(all_series.columns[col_idx])] = all_series.iloc[:,init_idx:col_idx].mean(axis=1)
+        init_idx = col_idx
+        
     final_cna_df[chr_now+"_"+str(all_series.columns[init_idx])+":"+str(all_series.columns[-1])] = all_series.iloc[:,init_idx:].mean(axis=1)
 
     
 print(final_cna_df.shape)
-final_cna_df.to_pickle("../data/cna/tcga_cna_raw_all_samples_all_chr_0.8_threshold.pkl")
+final_cna_df.to_pickle("../data/cna/tcga_cna_raw_all_samples_all_chr_0.8_threshold_0.6_X.pkl")
     
