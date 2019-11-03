@@ -72,29 +72,29 @@ else:
 ## Load Data ##
 ###############
 
-#X_tcga_no_brca = pd.read_pickle("../data/tcga_raw_no_labelled_brca_log_row_normalized.pkl")
+X_tcga_no_brca = pd.read_pickle("../data/tcga_raw_no_labelled_brca_log_row_normalized.pkl")
 #X_tcga_no_brca = pd.read_pickle("../data/hybrids/tcga_mirna_rna_filtered_scaled.pkl")
-X_tcga_no_brca = pd.read_pickle("../data/miRNA_no_brca_filtered_scaled.pkl")
+#X_tcga_no_brca = pd.read_pickle("../data/miRNA_no_brca_filtered_scaled.pkl")
 
-X_tcga_no_brca.drop(['tcga_id', 'gdc_id'], axis="columns", inplace=True)
+#X_tcga_no_brca.drop(['tcga_id', 'gdc_id'], axis="columns", inplace=True)
 
-#X_brca_train = pd.read_pickle("../data/tcga_brca_raw_19036_row_log_norm_train.pkl")
+X_brca_train = pd.read_pickle("../data/tcga_brca_raw_19036_row_log_norm_train.pkl")
 #X_brca_train = pd.read_pickle("../data/hybrids/tcga_brca_mirna_rna_meta_train.pkl")
-X_brca_train = pd.read_csv("../data/miRNA_filtered_norm_scaled_train.csv")
+#X_brca_train = pd.read_csv("../data/miRNA_filtered_norm_scaled_train.csv")
 
 y_brca_train = X_brca_train["Ciriello_subtype"]
 
-#X_brca_train.drop(['tcga_id', 'Ciriello_subtype', 'sample_id', 'cancer_type'], axis="columns", inplace=True)
-X_brca_train.drop(['Ciriello_subtype'], axis="columns", inplace=True)
+X_brca_train.drop(['tcga_id', 'Ciriello_subtype', 'sample_id', 'cancer_type'], axis="columns", inplace=True)
+#X_brca_train.drop(['Ciriello_subtype'], axis="columns", inplace=True)
 
 # Test data
-#X_brca_test = pd.read_pickle("../data/tcga_brca_raw_19036_row_log_norm_test.pkl")
-#y_brca_test = X_brca_test["subtype"]
+X_brca_test = pd.read_pickle("../data/tcga_brca_raw_19036_row_log_norm_test.pkl")
+y_brca_test = X_brca_test["subtype"]
 
-X_brca_test = pd.read_csv("../data/miRNA_filtered_norm_scaled_test.csv")
-y_brca_test = X_brca_test["expert_PAM50_subtypes"]
+#X_brca_test = pd.read_csv("../data/miRNA_filtered_norm_scaled_test.csv")
+#y_brca_test = X_brca_test["expert_PAM50_subtypes"]
 
-X_brca_test.drop(['expert_PAM50_subtypes'], axis="columns", inplace=True)
+X_brca_test.drop(['tcga_id', 'subtype', 'sample_id', 'cancer_type'], axis="columns", inplace=True)
 
 #############################
 ## 5-Fold Cross Validation ##
@@ -104,10 +104,10 @@ confusion_matrixes = []
 validation_set_percent = 0.1
 subtypes = ["Basal", "Her2", "LumA", "LumB", "Normal"]
 
-'''
 
 
-d_rates = [0.4]
+
+d_rates = [0.6]
 d_rates2 = [0.8]
 for drop in d_rates:
 	for drop2 in d_rates2:
@@ -208,7 +208,7 @@ for drop in d_rates:
 			conf_matrix = np.add(conf_matrix, conf)
 			print(conf_matrix)
 
-			filename="../results/miRNA/VAE/{}_hidden_{}_emb/history/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_history_{}_classifier_frozen_{}_cv_other_metrics.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, i, vae.freeze_weights)
+			filename="../results/run2_for_conf_matrix/VAE/{}_hidden_{}_emb/history/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_history_{}_classifier_frozen_{}_cv_other_metrics.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, i, vae.freeze_weights)
 			history_df.to_csv(filename, sep=',')
 			i+=1
 
@@ -230,8 +230,8 @@ for drop in d_rates:
 		classify_df = classify_df.assign(classifier_loss="categorical_crossentropy")
 		classify_df = classify_df.assign(reconstruction_loss=reconstruction_loss)
 
-		output_filename="../results/miRNA/VAE/{}_hidden_{}_emb/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_classifier_cv_final_other_metrics.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
-		conf_filename="../results/miRNA/VAE/{}_hidden_{}_emb/confusion_matrix/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_classifier_cv_confusion_matrix_other_metrics.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
+		output_filename="../results/run2_for_conf_matrix/VAE/{}_hidden_{}_emb/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_classifier_cv_final_other_metrics.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
+		conf_filename="../results/run2_for_conf_matrix/VAE/{}_hidden_{}_emb/confusion_matrix/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_classifier_cv_confusion_matrix_other_metrics.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
 
 
 		classify_df.to_csv(output_filename, sep=',')
@@ -322,3 +322,4 @@ output_filename="../results/VAE/{}_hidden_{}_emb/tcga_classifier_dropout_{}_in_{
 
 classify_df.to_csv(output_filename, sep=',')
 
+'''

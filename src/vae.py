@@ -208,7 +208,7 @@ class CVAE(BaseVAE):
     """
 
 	def __init__(self, original_dim, 
-						intermediate_dim=0, 
+						intermediate_dim=300, 
 						latent_dim=100,
 						cond_dim=33, 
 						epochs=100, 
@@ -297,8 +297,8 @@ class CVAE(BaseVAE):
 
 			if self.dropout_decoder==True:
 				self.decoder_dropout = Dropout(rate=self.dropout_rate_hidden)
-				decoder_hidden_dropout = self.decoder_dropout(cvae_decoder_hidden)
-				self.outputs = self.decoder_output(decoder_hidden_dropout)
+				self.decoder_hidden_dropout = self.decoder_dropout(cvae_decoder_hidden)
+				self.outputs = self.decoder_output(self.decoder_hidden_dropout)
 			else:
 				self.outputs = self.decoder_output(cvae_decoder_hidden)
 
@@ -309,7 +309,7 @@ class CVAE(BaseVAE):
 
 		# Compile Encoder
 		self.encoder = Model([self.input_data, self.input_cond], [self.z_mean_encoded, self.z_log_var_encoded], name="encoder")
-
+		'''
 		# Compile Decoder
 		self.decoder_input = Input(shape=(self.cvae_latent_dim,), name='z_sampling')
 
@@ -325,7 +325,7 @@ class CVAE(BaseVAE):
 				X_decoded = self.decoder_output(x_hidden)
 
 		self.decoder = Model(self.decoder_input, x_decoded, name='decoder')
-
+		'''
 	def _compile_vae(self):
 		"""
 		Compiles all the layers together, creating the Conditional Variational Autoencoder
