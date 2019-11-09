@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split, StratifiedKFold
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import OneHotEncoder
 from tensorflow.keras.callbacks import EarlyStopping
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, classification_report
 
 import argparse
 
@@ -92,10 +92,11 @@ X_brca_test.drop(['tcga_id', 'subtype', 'sample_id', 'cancer_type'], axis="colum
 
 confusion_matrixes = []
 validation_set_percent = 0.1
+subtypes = ["Basal", "Her2", "LumA", "LumB", "Normal"]
 
 
-d_rates = [0.6]
-d_rates2 = [0.8]
+d_rates = [0, 0.2, 0.4, 0.6, 0.8]
+d_rates2 = [0, 0.2, 0.4, 0.6, 0.8]
 for drop in d_rates:
 	for drop2 in d_rates2:
 		print("DROPOUT RATE FOR INPUT LAYER: {}".format(drop))
@@ -158,6 +159,8 @@ for drop in d_rates:
 			enc = OneHotEncoder(sparse=False)
 			y_labels_train = enc.fit_transform(y_train.values.reshape(-1, 1))
 			y_labels_val = pd.DataFrame(enc.fit_transform(y_val.values.reshape(-1, 1)))
+			y_labels_val_conf = enc.fit_transform(y_val.values.reshape(-1, 1))
+            
 	    
 			X_train_train, X_train_val, y_labels_train_train, y_labels_train_val = train_test_split(X_train, y_labels_train, test_size=0.2, stratify=y_train, random_state=42)
 			history_df = vae.hist_dataframe
@@ -186,12 +189,12 @@ for drop in d_rates:
 			else:
 				score = vae.classifier.evaluate(X_val, y_labels_val)
 
+				report = classification_report(y_labels_val_conf.argmax(axis=1), vae.classifier.predict(X_val).argmax(axis=1), target_names=subtypes, output_dict=True)
+
 			print(score)
 			scores.append(score[1])
-            
-			y_labels_val_conf = enc.fit_transform(y_val.values.reshape(-1, 1))
 
-			classify_df = classify_df.append({"Fold":str(i), "accuracy":score[1]}, ignore_index=True)
+			classify_df = classify_df.append({"Fold":str(i), "accuracy":score[1], "other_metrics": report}, ignore_index=True)
 			history_df = pd.DataFrame(fit_hist.history)
 			conf = confusion_matrix(y_labels_val_conf.argmax(axis=1), vae.classifier.predict(X_val).argmax(axis=1))
 			print(conf)
@@ -199,7 +202,7 @@ for drop in d_rates:
 			conf_matrix = np.add(conf_matrix, conf)
 			print(conf_matrix)
 
-			filename="../results/run2_for_conf_matrix/VAE/{}_hidden_{}_emb/history/archs4_brca_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_history_{}_classifier_frozen_{}_cv.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, i, vae.freeze_weights)
+			filename="../results/run2_for_conf_matrix/VAE/{}_hidden_{}_emb/history/archs4_brca_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_history_{}_classifier_frozen_{}_cv_other_metrics.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, i, vae.freeze_weights)
 			history_df.to_csv(filename, sep=',')
 
 			i+=1
@@ -222,9 +225,9 @@ for drop in d_rates:
 		classify_df = classify_df.assign(classifier_loss="categorical_crossentropy")
 		classify_df = classify_df.assign(reconstruction_loss=reconstruction_loss)
 
-		output_filename="../results/run2_for_conf_matrix/VAE/{}_hidden_{}_emb/archs4_brca_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_cv_2nd_run.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
+		output_filename="../results/run2_for_conf_matrix/VAE/{}_hidden_{}_emb/archs4_brca_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_cv_other_metrics.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
 
-		conf_filename="../results/run2_for_conf_matrix/VAE/{}_hidden_{}_emb/confusion_matrix/archs4_brca_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_cv_confusion_matrix.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
+		conf_filename="../results/run2_for_conf_matrix/VAE/{}_hidden_{}_emb/confusion_matrix/archs4_brca_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_cv_confusion_matrix_other_metrics.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
 
 		classify_df.to_csv(output_filename, sep=',')
 		confs_matrix = pd.DataFrame(conf_matrix)

@@ -94,11 +94,10 @@ for file_name in tqdm(files):
 
 # in order to use the positions, it is enough sets in the previous cell!!!!
 
-chromosomes = ['chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7', 'chr8', 'chr9', 'chr10', 'chr11', 'chr12', 'chr13', 'chr14', 'chr15', 'chr16', 'chr17', 'chr18', 'chr19', 'chr20', 'chr21', 'chr22', 'chrX']
 
 for chr_idx in tqdm(list(range(1,23))+list("X")):
     
-    th = 0.6 if chr_idx == "X" else 0.8
+    th = 0.8 if chr_idx == "X" else 0.99
     
     chr_now = 'chr'+str(chr_idx)
     chr_positions =sorted(map(lambda x : x[1], filter(lambda x : x[0] == chr_now, d_new.keys())))
@@ -126,6 +125,12 @@ for chr_idx in tqdm(list(range(1,23))+list("X")):
         all_series.append(new_series)
         
     all_series = pd.concat(all_series, axis=1).T
+    
+    
+    #rna_train = pd.read_pickle("../data/tcga_brca_raw_19036_row_log_norm_train.pkl")
+    #all_series["tcga_id"] = list(map(lambda x: x[:12], all_series.index))
+    #all_series_brca = pd.merge(all_series, rna_train["tcga_id"], on='tcga_id')
+    #all_series_brca.drop(['tcga_id'], axis=1, inplace=True)
       
     corrs = []
     has_nas = []
@@ -156,5 +161,5 @@ for chr_idx in tqdm(list(range(1,23))+list("X")):
 
     
 print(final_cna_df.shape)
-final_cna_df.to_pickle("../data/cna/tcga_cna_raw_all_samples_all_chr_0.8_threshold_0.6_X.pkl")
+final_cna_df.to_pickle("../data/cna/tcga_cna_raw_all_samples_all_chr_0.99_threshold_0.8_X.pkl")
     

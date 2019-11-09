@@ -31,6 +31,7 @@ sess = tf.Session(config=
 #                    device_count = {'CPU': parallelization_factor},
 ))
 
+
 #dropout_input = 0.2
 #dropout_hidden = 0.2
 
@@ -47,7 +48,9 @@ learning_rate = 0.001
 ###############
 
 #X_brca_train = pd.read_csv("../data/miRNA_filtered_norm_scaled_train.csv")
-X_brca_train = pd.read_pickle("../data/hybrids/tcga_brca_mirna_rna_meta_train.pkl")
+#X_brca_train = pd.read_pickle("../data/hybrids/tcga_brca_mirna_rna_meta_train.pkl")
+X_brca_train = pd.read_pickle("../data/cna_brca_train_0.8_threshold_0.6_chrX.pkl")
+#X_brca_train = pd.read_pickle("../data/hybrids/tcga_brca_cna_rna_meta_train.pkl")
 
 y_brca_train = X_brca_train["Ciriello_subtype"]
 
@@ -56,8 +59,9 @@ X_brca_train.drop(['tcga_id','Ciriello_subtype'], axis="columns", inplace=True)
 
 subtypes = ["Basal", "Her2", "LumA", "LumB", "Normal"]
 
-d_rates1 = [0.4]
-d_rates2 = [0.8]
+
+d_rates1 = [0, 0.2, 0.4, 0.5, 0.6, 0.8]
+d_rates2 = [0, 0.2, 0.4, 0.5, 0.6, 0.8]
 for drop1 in d_rates1:
 	for drop2 in d_rates2:
 
@@ -133,7 +137,7 @@ for drop1 in d_rates1:
 
 		print('5-Fold results: {}'.format(scores))
 		print('Average accuracy: {}'.format(np.mean(scores)))
-		plt.savefig('../results/miRNA+RNA/fully_con/history_miRNA_ffnn_{}_in_{}_hidden_100_20_other_metrics.png'.format(dropout_input, dropout_hidden))
+		plt.savefig('../results/cna/fully_con/history_miRNA_ffnn_{}_in_{}_hidden_100_20_other_metrics.png'.format(dropout_input, dropout_hidden))
 		plt.clf()
 
 		classify_df = classify_df.assign(mean_accuracy=np.mean(scores))
@@ -145,8 +149,8 @@ for drop1 in d_rates1:
 		classify_df = classify_df.assign(dropout_input=dropout_input)
 		classify_df = classify_df.assign(dropout_hidden=dropout_hidden)
 
-		output_filename="../results/miRNA+RNA/fully_con/{}_hidden_{}_emb_tcga_classifier_dropout_{}_in_{}_hidden_batch_{}_lrate_{}_cv_other_metrics.csv".format(hidden_dim_1, hidden_dim_2, dropout_input, dropout_hidden, batch_size, learning_rate)
-		conf_filename="../results/miRNA+RNA/fully_con/confusion_matrix/{}_hidden_{}_emb_tcga_classifier_dropout_{}_in_{}_hidden_batch_{}_lrate_{}_cv_confusion_matrix_other_metrics.csv".format(hidden_dim_1, hidden_dim_2, dropout_input, dropout_hidden, batch_size, learning_rate)
+		output_filename="../results/cna/fully_con/{}_hidden_{}_emb_tcga_classifier_dropout_{}_in_{}_hidden_batch_{}_lrate_{}_cv_other_metrics.csv".format(hidden_dim_1, hidden_dim_2, dropout_input, dropout_hidden, batch_size, learning_rate)
+		conf_filename="../results/cna/fully_con/confusion_matrix/{}_hidden_{}_emb_tcga_classifier_dropout_{}_in_{}_hidden_batch_{}_lrate_{}_cv_confusion_matrix_other_metrics.csv".format(hidden_dim_1, hidden_dim_2, dropout_input, dropout_hidden, batch_size, learning_rate)
 
 		classify_df.to_csv(output_filename, sep=',')
 		confs_matrix = pd.DataFrame(conf_matrix)
@@ -155,11 +159,9 @@ for drop1 in d_rates1:
 		conf_matrix = np.zeros([5,5])
 
 
-
-
-
 '''
-dropout_input = 0.5
+
+dropout_input = 0.4
 dropout_hidden = 0.8
 hidden_dim_1 = 300
 hidden_dim_2 = 100
@@ -172,13 +174,22 @@ learning_rate = 0.001
 ###############
 
 
-X_brca_train = pd.read_csv("../data/miRNA_filtered_norm_scaled_train.csv")
-y_brca_train = X_brca_train["Ciriello_subtype"]
-X_brca_train.drop(['Ciriello_subtype'], axis="columns", inplace=True)
+subtypes = ["Basal", "Her2", "LumA", "LumB", "Normal"]
 
-X_brca_test= pd.read_csv("../data/miRNA_filtered_norm_scaled_test.csv")
+
+#X_brca_train = pd.read_csv("../data/miRNA_filtered_norm_scaled_train.csv")
+X_brca_train = pd.read_pickle("../data/hybrids/tcga_brca_mirna_rna_meta_train.pkl")
+y_brca_train = X_brca_train["Ciriello_subtype"]
+
+#X_brca_train.drop(['Ciriello_subtype'], axis="columns", inplace=True)
+X_brca_train.drop(['tcga_id','Ciriello_subtype'], axis="columns", inplace=True)
+
+#X_brca_test= pd.read_csv("../data/miRNA_filtered_norm_scaled_test.csv")
+X_brca_test= pd.read_pickle("../data/hybrids/tcga_brca_mirna_rna_meta_test.pkl")
 y_brca_test = X_brca_test["expert_PAM50_subtypes"]
-X_brca_test.drop(['expert_PAM50_subtypes'], axis="columns", inplace=True)
+
+#X_brca_test.drop(['expert_PAM50_subtypes'], axis="columns", inplace=True)
+X_brca_test.drop(['tcga_id', 'expert_PAM50_subtypes'], axis="columns", inplace=True)
 
 
 scores = []
@@ -244,10 +255,11 @@ classify_df = classify_df.assign(learning_rate=learning_rate)
 classify_df = classify_df.assign(dropout_input=dropout_input)
 classify_df = classify_df.assign(dropout_hidden=dropout_hidden)
 
-output_filename="../results/miRNA/fully_con/{}_hidden_{}_emb_tcga_classifier_dropout_{}_in_{}_hidden_other_metrics_test_set_.csv".format(hidden_dim_1, hidden_dim_2, dropout_input, dropout_hidden)
+output_filename="../results/miRNA+RNA/fully_con/{}_hidden_{}_emb_tcga_classifier_dropout_{}_in_{}_hidden_other_metrics_test_set.csv".format(hidden_dim_1, hidden_dim_2, dropout_input, dropout_hidden)
 
-conf_filename="../results/miRNA/fully_con/confusion_matrix/{}_hidden_{}_emb_tcga_classifier_dropout_{}_in_{}_hidden_batch_{}_lrate_{}_confusion_matrix_test.csv".format(hidden_dim_1, hidden_dim_2, dropout_input, dropout_hidden, batch_size, learning_rate)
+conf_filename="../results/miRNA+RNA/fully_con/confusion_matrix/{}_hidden_{}_emb_tcga_classifier_dropout_{}_in_{}_hidden_batch_{}_lrate_{}_confusion_matrix_test.csv".format(hidden_dim_1, hidden_dim_2, dropout_input, dropout_hidden, batch_size, learning_rate)
 
 classify_df.to_csv(output_filename, sep=',')
 conf_matrix.to_csv(conf_filename, sep=',')
+
 '''
