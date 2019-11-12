@@ -30,7 +30,7 @@ sess = tf.Session(config=
                intra_op_parallelism_threads=parallelization_factor,
 #                    device_count = {'CPU': parallelization_factor},
 ))
-
+'''
 
 #dropout_input = 0.2
 #dropout_hidden = 0.2
@@ -161,13 +161,13 @@ for drop1 in d_rates1:
 
 '''
 
-dropout_input = 0.4
-dropout_hidden = 0.8
+dropout_input = 0.2
+dropout_hidden = 0
 hidden_dim_1 = 300
 hidden_dim_2 = 100
 epochs = 100
-batch_size = 50
-learning_rate = 0.001
+batch_size = 200
+learning_rate = 0.01
 
 ###############
 ## Load Data ##
@@ -178,18 +178,24 @@ subtypes = ["Basal", "Her2", "LumA", "LumB", "Normal"]
 
 
 #X_brca_train = pd.read_csv("../data/miRNA_filtered_norm_scaled_train.csv")
-X_brca_train = pd.read_pickle("../data/hybrids/tcga_brca_mirna_rna_meta_train.pkl")
+#X_brca_train = pd.read_pickle("../data/hybrids/tcga_brca_mirna_rna_meta_train.pkl")
+#y_brca_train = X_brca_train["Ciriello_subtype"]
+X_brca_train = pd.read_pickle("../data/cna_brca_train_0.8_threshold_0.6_chrX.pkl")
 y_brca_train = X_brca_train["Ciriello_subtype"]
+
 
 #X_brca_train.drop(['Ciriello_subtype'], axis="columns", inplace=True)
 X_brca_train.drop(['tcga_id','Ciriello_subtype'], axis="columns", inplace=True)
 
 #X_brca_test= pd.read_csv("../data/miRNA_filtered_norm_scaled_test.csv")
-X_brca_test= pd.read_pickle("../data/hybrids/tcga_brca_mirna_rna_meta_test.pkl")
-y_brca_test = X_brca_test["expert_PAM50_subtypes"]
+#X_brca_test= pd.read_pickle("../data/hybrids/tcga_brca_mirna_rna_meta_test.pkl")
+#y_brca_test = X_brca_test["expert_PAM50_subtypes"]
+
+X_brca_test= pd.read_pickle("../data/cna_brca_test_0.8_treshold_0.6_chrX.pkl")
+y_brca_test = X_brca_test["subtype"]
 
 #X_brca_test.drop(['expert_PAM50_subtypes'], axis="columns", inplace=True)
-X_brca_test.drop(['tcga_id', 'expert_PAM50_subtypes'], axis="columns", inplace=True)
+X_brca_test.drop(['tcga_id', 'subtype'], axis="columns", inplace=True)
 
 
 scores = []
@@ -255,11 +261,9 @@ classify_df = classify_df.assign(learning_rate=learning_rate)
 classify_df = classify_df.assign(dropout_input=dropout_input)
 classify_df = classify_df.assign(dropout_hidden=dropout_hidden)
 
-output_filename="../results/miRNA+RNA/fully_con/{}_hidden_{}_emb_tcga_classifier_dropout_{}_in_{}_hidden_other_metrics_test_set.csv".format(hidden_dim_1, hidden_dim_2, dropout_input, dropout_hidden)
+output_filename="../results/cna/fully_con/{}_hidden_{}_emb_tcga_classifier_dropout_{}_in_{}_hidden_other_metrics_test_set.csv".format(hidden_dim_1, hidden_dim_2, dropout_input, dropout_hidden)
 
-conf_filename="../results/miRNA+RNA/fully_con/confusion_matrix/{}_hidden_{}_emb_tcga_classifier_dropout_{}_in_{}_hidden_batch_{}_lrate_{}_confusion_matrix_test.csv".format(hidden_dim_1, hidden_dim_2, dropout_input, dropout_hidden, batch_size, learning_rate)
+conf_filename="../results/cna/fully_con/confusion_matrix/{}_hidden_{}_emb_tcga_classifier_dropout_{}_in_{}_hidden_batch_{}_lrate_{}_confusion_matrix_test.csv".format(hidden_dim_1, hidden_dim_2, dropout_input, dropout_hidden, batch_size, learning_rate)
 
 classify_df.to_csv(output_filename, sep=',')
 conf_matrix.to_csv(conf_filename, sep=',')
-
-'''

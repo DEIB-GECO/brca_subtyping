@@ -21,7 +21,7 @@ from tensorflow.python.keras.callbacks import TensorBoard
 tensorboard = TensorBoard(log_dir="logs/{}".format(time()))
 
 #Limit number of cores on Keras
-parallelization_factor = 5
+parallelization_factor = 10
 
 config = tf.ConfigProto(inter_op_parallelism_threads=parallelization_factor,
                			intra_op_parallelism_threads=parallelization_factor)
