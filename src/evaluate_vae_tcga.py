@@ -80,7 +80,6 @@ else:
 X_tcga_no_brca = pd.read_pickle("../data/hybrids/tcga_no_brca_cna_mirna_rna_filtered_scaled.pkl")
 
 #X_tcga_no_brca.drop(['tcga_id', 'gdc_id'], axis="columns", inplace=True)
-#X_tcga_no_brca.drop(['tcga_id', 'cancer_type'], axis="columns", inplace=True)
 X_tcga_no_brca.drop(['tcga_id', 'cancer_type'], axis="columns", inplace=True)
 
 #X_brca_train = pd.read_pickle("../data/tcga_brca_raw_19036_row_log_norm_train.pkl")
@@ -107,11 +106,18 @@ X_brca_train.drop(['tcga_id','Ciriello_subtype'], axis="columns", inplace=True)
 #X_brca_test = pd.read_pickle("../data/cna_brca_test_0.8_treshold_0.6_chrX.pkl")
 #y_brca_test = X_brca_test["subtype"]
 
+#X_brca_test = pd.read_pickle("../data/hybrids/tcga_brca_mirna_rna_meta_test.pkl")
+#y_brca_test = X_brca_test["expert_PAM50_subtypes"]
+
+#X_brca_test = pd.read_pickle("../data/hybrids/tcga_brca_cna_rna_meta_test.pkl")
+#y_brca_test = X_brca_test["subtype"]
+
 X_brca_test = pd.read_pickle("../data/hybrids/tcga_brca_cna_mirna_rna_meta_test.pkl")
 y_brca_test = X_brca_test["subtype"]
 
 #X_brca_test.drop(['tcga_id', 'subtype', 'sample_id', 'cancer_type'], axis="columns", inplace=True)
 X_brca_test.drop(['tcga_id', 'subtype'], axis="columns", inplace=True)
+#X_brca_test.drop(['tcga_id', 'expert_PAM50_subtypes'], axis="columns", inplace=True)
 
 #############################
 ## 5-Fold Cross Validation ##
@@ -121,7 +127,7 @@ confusion_matrixes = []
 validation_set_percent = 0.1
 subtypes = ["Basal", "Her2", "LumA", "LumB", "Normal"]
 
-
+'''
 
 d_rates = [0, 0.2, 0.4, 0.6, 0.8]
 d_rates2 = [0, 0.2, 0.4, 0.6, 0.8]
@@ -224,7 +230,7 @@ for drop in d_rates:
 			conf_matrix = np.add(conf_matrix, conf)
 			print(conf_matrix)
 
-			filename="../results/cna+miRNA+RNA/VAE/{}_hidden_{}_emb/history/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_history_{}_classifier_frozen_{}_cv_other_metrics.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, i, vae.freeze_weights)
+			filename="../results/cna+miRNA+RNA/VAE/{}_hidden_{}_emb/history/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_history_{}_classifier_frozen_{}_cv_other_metrics_2.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, i, vae.freeze_weights)
 			history_df.to_csv(filename, sep=',')
 			i+=1
 
@@ -246,8 +252,8 @@ for drop in d_rates:
 		classify_df = classify_df.assign(classifier_loss="categorical_crossentropy")
 		classify_df = classify_df.assign(reconstruction_loss=reconstruction_loss)
 
-		output_filename="../results/cna+miRNA+RNA/VAE/{}_hidden_{}_emb/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_classifier_cv_final_other_metrics.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
-		conf_filename="../results/cna+miRNA+RNA/VAE/{}_hidden_{}_emb/confusion_matrix/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_classifier_cv_confusion_matrix_other_metrics.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
+		output_filename="../results/cna+miRNA+RNA/VAE/{}_hidden_{}_emb/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_classifier_cv_final_other_metrics_2.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
+		conf_filename="../results/cna+miRNA+RNA/VAE/{}_hidden_{}_emb/confusion_matrix/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_classifier_cv_confusion_matrix_other_metrics_2.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
 
 
 		classify_df.to_csv(output_filename, sep=',')
@@ -315,9 +321,17 @@ fit_hist = vae.classifier.fit(x=X_train_train,
 score = vae.classifier.evaluate(X_brca_test_scaled, y_labels_test)
 conf_matrix = pd.DataFrame(confusion_matrix(y_labels_test.argmax(axis=1), vae.classifier.predict(X_brca_test_scaled).argmax(axis=1)))
 
+history_df = pd.DataFrame(fit_hist.history)
+filename="../results/cna+miRNA+RNA/VAE/{}_hidden_{}_emb/history/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_history_classifier_frozen_{}_cv_other_metrics_TEST_CLASSIFIER.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, vae.freeze_weights)
+
+filename_2="../results/cna+miRNA+RNA/VAE/{}_hidden_{}_emb/history/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_history_classifier_frozen_{}_cv_other_metrics_TEST_VAE.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, vae.freeze_weights)
+
+vae.hist_dataframe.to_csv(filename_2, sep=',')
+history_df.to_csv(filename, sep=',')
+
 report = classification_report(y_labels_test.argmax(axis=1), vae.classifier.predict(X_brca_test_scaled).argmax(axis=1), target_names=subtypes, output_dict=True)
 
-conf_matrix.to_csv("../results/cna/VAE/{}_hidden_{}_emb/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_classifier_frozen_{}_confusion_matrix_test_other_metrics.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, freeze_weights))
+conf_matrix.to_csv("../results/cna+miRNA+RNA/VAE/{}_hidden_{}_emb/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_classifier_frozen_{}_confusion_matrix_test_other_metrics_2.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, freeze_weights))
 
 classify_df = classify_df.append({"accuracy":score[1]}, ignore_index=True)
 classify_df = classify_df.append({"other_metrics":report}, ignore_index=True)
@@ -334,8 +348,7 @@ classify_df = classify_df.assign(classifier_use_z=classifier_use_z)
 classify_df = classify_df.assign(classifier_loss="categorical_crossentropy")
 classify_df = classify_df.assign(reconstruction_loss=reconstruction_loss)
 
-output_filename="../results/cna/VAE/{}_hidden_{}_emb/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_classifier_final_test_other_metrics.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
+output_filename="../results/cna+miRNA+RNA/VAE/{}_hidden_{}_emb/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_classifier_final_test_other_metrics.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
 
 classify_df.to_csv(output_filename, sep=',')
 
-'''

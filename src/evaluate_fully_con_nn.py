@@ -32,7 +32,7 @@ sess = tf.Session(config=
                intra_op_parallelism_threads=parallelization_factor,
 #                    device_count = {'CPU': parallelization_factor},
 ))
-
+'''
 #dropout_input = 0.2
 #dropout_hidden = 0.2
 #hidden_dim_1 = 300
@@ -152,12 +152,10 @@ for drop1 in d_rates1:
 
 
 
-
 '''
+
 dropout_input = 0.8
-dropout_hidden = 0.4
-hidden_dim_1 = 300
-hidden_dim_2 = 100
+hidden_dim_1 = 50
 epochs = 100
 batch_size = 50
 learning_rate = 0.001
@@ -167,13 +165,13 @@ learning_rate = 0.001
 ###############
 
 
-X_brca_train = pd.read_pickle("../data/tcga_brca_raw_19036_row_log_norm_train.pkl")
+X_brca_train = pd.read_pickle("../data/hybrids/tcga_brca_cna_mirna_rna_meta_train.pkl")
 y_brca_train = X_brca_train["Ciriello_subtype"]
-X_brca_train.drop(['tcga_id', 'Ciriello_subtype', 'sample_id', 'cancer_type'], axis="columns", inplace=True)
+X_brca_train.drop(['Ciriello_subtype', 'tcga_id'], axis="columns", inplace=True)
 
-X_brca_test= pd.read_pickle("../data/tcga_brca_raw_19036_row_log_norm_test.pkl")
+X_brca_test = pd.read_pickle("../data/hybrids/tcga_brca_cna_mirna_rna_meta_test.pkl")
 y_brca_test = X_brca_test["subtype"]
-X_brca_test.drop(['tcga_id', 'subtype', 'sample_id', 'cancer_type'], axis="columns", inplace=True)
+X_brca_test.drop(['subtype', 'tcga_id'], axis="columns", inplace=True)
 
 
 scores = []
@@ -198,11 +196,11 @@ dropout_in = Dropout(rate=dropout_input)(inputs)
 hidden1_dense = Dense(hidden_dim_1)(dropout_in)
 hidden1_batchnorm = BatchNormalization()(hidden1_dense)
 hidden1_encoded = Activation("relu")(hidden1_batchnorm)
-dropout_hidden1 = Dropout(rate=dropout_hidden)(hidden1_encoded)
-hidden2_dense = Dense(hidden_dim_2)(dropout_hidden1)
-hidden2_batchnorm = BatchNormalization()(hidden2_dense)
-hidden2_encoded = Activation("relu")(hidden2_batchnorm)
-out = Dense(5, activation="softmax")(hidden2_encoded)
+#dropout_hidden1 = Dropout(rate=dropout_hidden)(hidden1_encoded)
+#hidden2_dense = Dense(hidden_dim_2)(dropout_hidden1)
+#hidden2_batchnorm = BatchNormalization()(hidden2_dense)
+#hidden2_encoded = Activation("relu")(hidden2_batchnorm)
+out = Dense(5, activation="softmax")(hidden1_encoded)
 
 model = Model(inputs, out, name="fully_con_nn")
 
@@ -220,7 +218,7 @@ model.fit(x=X_train_train,
 score = model.evaluate(X_test, y_labels_test)
 conf_matrix = pd.DataFrame(confusion_matrix(y_labels_test.values.argmax(axis=1), model.predict(X_test).argmax(axis=1)))
 
-conf_matrix.to_csv("../feed_forward_300_100_conf_matrix.csv")
+conf_matrix.to_csv("../results/fully_con_ieee/rna+miRNA+cna/confusion_matrix/confusion_matrix_text.csv")
 
 classify_df = classify_df.append({"accuracy":score[1]}, ignore_index=True)
 print(score)
@@ -231,15 +229,13 @@ print('Result: {}'.format(scores))
 print('Average accuracy: {}'.format(np.mean(scores)))
 
 classify_df = classify_df.assign(hidden_1=hidden_dim_1)
-classify_df = classify_df.assign(hidden_2=hidden_dim_2)
 classify_df = classify_df.assign(batch_size=batch_size)
 classify_df = classify_df.assign(epochs_vae=epochs)
 classify_df = classify_df.assign(learning_rate=learning_rate)
 classify_df = classify_df.assign(dropout_input=dropout_input)
-classify_df = classify_df.assign(dropout_hidden=dropout_hidden)
 
-output_filename="../results/fully_con/all_subtype/{}_hidden_{}_emb_tcga_classifier_dropout_{}_in_{}_hidden_test_set_final_2.csv".format(hidden_dim_1, hidden_dim_2, dropout_input, dropout_hidden)
+output_filename="../results/fully_con_ieee/rna+miRNA+cna/{}_hidden_tcga_classifier_dropout_{}_test_set.csv".format(hidden_dim_1, dropout_input)
 
 
 classify_df.to_csv(output_filename, sep=',')
-'''
+
