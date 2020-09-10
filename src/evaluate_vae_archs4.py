@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split, StratifiedKFold
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import OneHotEncoder
 from tensorflow.keras.callbacks import EarlyStopping
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, classification_report
 import sys
 
 import argparse
@@ -52,6 +52,7 @@ if args.parameter_file is not None:
 	dropout_decoder = True
 	freeze_weights = False
 	classifier_use_z = False
+	noise_input = False
 	reconstruction_loss = str(get_params("reconstruction_loss"))
 
 else:
@@ -66,6 +67,7 @@ else:
 	dropout_decoder = True
 	freeze_weights = False
 	classifier_use_z = False
+	noise_input = False
 	reconstruction_loss = args.reconstruction_loss
 
 
@@ -96,12 +98,14 @@ validation_set_percent = 0.1
 
 
 dropout_input = 0.6
-dropout_hidden = 0.6
+dropout_hidden = 0.4
 
-skf = StratifiedKFold(n_splits=5)
+skf = StratifiedKFold(n_splits=10)
 scores = []
 i=1
 classify_df = pd.DataFrame(columns=["Fold", "accuracy"])
+conf_matrix = np.zeros([5,5])
+
 
 for train_index, test_index in skf.split(X_brca_train, y_brca_train):
 	print('Fold {} of {}'.format(i, skf.n_splits))
@@ -147,9 +151,6 @@ for train_index, test_index in skf.split(X_brca_train, y_brca_train):
 	vae.initialize_model()
 	vae.train_vae(train_df=X_autoencoder_train, val_df=X_autoencoder_val)
     
-    vae.save("../models/vae_300in_100lat_0.6drop_in_0.6drop_hidden_0.001lr_100epochs_full_archs4.h5")
-    sys.exit("VAE trained and weights are stored")
-    
 	# Build and train stacked classifier
 	enc = OneHotEncoder(sparse=False)
 	y_labels_train = enc.fit_transform(y_train.values.reshape(-1, 1))
@@ -164,7 +165,7 @@ for train_index, test_index in skf.split(X_brca_train, y_brca_train):
 								y=y_labels_train_train, 
 								shuffle=True, 
 								epochs=100,
-								batch_size=50,
+								batch_size=64,
 								callbacks=[EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)],
 								validation_data=(X_train_val, y_labels_train_val))
 
@@ -177,15 +178,22 @@ for train_index, test_index in skf.split(X_brca_train, y_brca_train):
 		score = vae.classifier.evaluate(X_val_new, y_labels_val_new)
 	else:
 		score = vae.classifier.evaluate(X_val, y_labels_val)
+		report = classification_report(y_labels_val_conf.argmax(axis=1), vae.classifier.predict(X_val).argmax(axis=1), target_names=subtypes, output_dict=True)
 
 	print(score)
 	scores.append(score[1])
 
-	classify_df = classify_df.append({"Fold":str(i), "accuracy":score[1]}, ignore_index=True)
+	classify_df = classify_df.append({"Fold":str(i), "accuracy":score[1], "other_metrics":report}, ignore_index=True)
 	history_df = pd.DataFrame(fit_hist.history)
 
-	#filename="../results/VAE/{}_hidden_{}_emb/history/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_history_{}_classifier_frozen_{}_cv.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, i, vae.freeze_weights)
-	#history_df.to_csv(filename, sep=',')
+	conf = confusion_matrix(y_labels_val_conf.argmax(axis=1), vae.classifier.predict(X_val).argmax(axis=1))
+	print(conf)
+	print(type(conf))
+	conf_matrix = np.add(conf_matrix, conf)
+	print(conf_matrix)
+
+	filename="../results/10-fold/RNA/VAE/{}_hidden_{}_emb/history/archs4_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_history_{}_classifier_frozen_{}_cv.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, i, vae.freeze_weights)
+	history_df.to_csv(filename, sep=',')
 	i+=1
 
 print('5-Fold results: {}'.format(scores))
@@ -206,10 +214,16 @@ classify_df = classify_df.assign(classifier_use_z=classifier_use_z)
 classify_df = classify_df.assign(classifier_loss="categorical_crossentropy")
 classify_df = classify_df.assign(reconstruction_loss=reconstruction_loss)
 
-output_filename="../results/VAE/{}_hidden_{}_emb/full_archs4_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_classifier_cv.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
+output_filename="../results/10-fold/RNA/VAE/{}_hidden_{}_emb/archs4_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_classifier_cv.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
+conf_filename="../results/10-fold/RNA/VAE/{}_hidden_{}_emb/confusion_matrix/archs4_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_classifier_cv_confusion_matrix_10_fold.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
 
 
 classify_df.to_csv(output_filename, sep=',')
+
+confs_matrix = pd.DataFrame(conf_matrix)
+confs_matrix.to_csv(conf_filename, sep=',')  
+# Put to 0 for next cv iteration
+conf_matrix = np.zeros([5,5])
 
 '''
 #################################

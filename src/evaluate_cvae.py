@@ -54,6 +54,7 @@ if args.parameter_file is not None:
 	dropout_decoder = True
 	freeze_weights = False
 	classifier_use_z = False
+	noise_input = False
 	reconstruction_loss = get_params("reconstruction_loss")
 
 else:
@@ -68,6 +69,7 @@ else:
 	dropout_decoder = True
 	freeze_weights = False
 	classifier_use_z = False
+	noise_input = False
 	reconstruction_loss = args.reconstruction_loss
 
 
@@ -77,9 +79,11 @@ else:
 
 #X_tcga_no_labelled_brca = pd.read_pickle("../data/tcga_raw_no_labelled_brca_log_row_normalized.pkl")
 #X_tcga_type_no_labelled_brca = pd.read_pickle("../data/tcga_raw_tumor_type.pkl")
+
 #X_tcga_no_labelled_brca = pd.read_pickle("../data/miRNA_no_brca_filtered_scaled_cancer_type.pkl")
 #X_tcga_type_no_labelled_brca = pd.DataFrame(X_tcga_no_labelled_brca["cancer_type"]).rename(columns={"cancer_type":"tumor_type"})
 #X_tcga_no_labelled_brca.drop(['tcga_id', 'gdc_id', 'cancer_type'], axis="columns", inplace=True)
+
 #X_tcga_no_labelled_brca = pd.read_pickle("../data/hybrids/tcga_mirna_rna_filtered_scaled_meta.pkl")
 #X_tcga_type_no_labelled_brca = pd.DataFrame(X_tcga_no_labelled_brca["cancer_type"]).rename(columns={"cancer_type":"tumor_type"})
 #X_tcga_no_labelled_brca.drop(['tcga_id', 'cancer_type'], axis="columns", inplace=True)
@@ -94,7 +98,12 @@ else:
 #X_tcga_type_no_labelled_brca.rename(columns={"cancer_type":"tumor_type"},inplace=True)
 #X_tcga_no_labelled_brca.drop(['tcga_id', 'cancer_type'], axis="columns", inplace=True)
 
-X_tcga_no_labelled_brca = pd.read_pickle("../data/cna_no_brca_filtered_scaled.pkl")
+#X_tcga_no_labelled_brca = pd.read_pickle("../data/cna_no_brca_filtered_scaled.pkl")
+#X_tcga_type_no_labelled_brca = pd.DataFrame(X_tcga_no_labelled_brca["cancer_type"])
+#X_tcga_type_no_labelled_brca.rename(columns={"cancer_type":"tumor_type"},inplace=True)
+#X_tcga_no_labelled_brca.drop(['tcga_id', 'cancer_type'], axis="columns", inplace=True)
+
+X_tcga_no_labelled_brca = pd.read_pickle("../data/hybrids/tcga_no_brca_cna_mirna_filtered_scaled.pkl")
 X_tcga_type_no_labelled_brca = pd.DataFrame(X_tcga_no_labelled_brca["cancer_type"])
 X_tcga_type_no_labelled_brca.rename(columns={"cancer_type":"tumor_type"},inplace=True)
 X_tcga_no_labelled_brca.drop(['tcga_id', 'cancer_type'], axis="columns", inplace=True)
@@ -102,6 +111,7 @@ X_tcga_no_labelled_brca.drop(['tcga_id', 'cancer_type'], axis="columns", inplace
 #X_brca_train = pd.read_pickle("../data/tcga_brca_raw_19036_row_log_norm_train.pkl")
 #y_brca_train = X_brca_train["Ciriello_subtype"]
 #X_brca_train.drop(['tcga_id', 'Ciriello_subtype', 'sample_id', 'cancer_type'], axis="columns", inplace=True)
+#X_brca_train.drop(['tcga_id', 'Ciriello_subtype', 'sample_id'], axis="columns", inplace=True)
 
 #X_brca_train = pd.read_csv("../data/miRNA_filtered_norm_scaled_train.csv")
 #y_brca_train = X_brca_train["Ciriello_subtype"]
@@ -119,7 +129,11 @@ X_tcga_no_labelled_brca.drop(['tcga_id', 'cancer_type'], axis="columns", inplace
 #y_brca_train = X_brca_train["Ciriello_subtype"]
 #X_brca_train.drop(['tcga_id', 'Ciriello_subtype'], axis="columns", inplace=True)
 
-X_brca_train = pd.read_pickle("../data/cna_brca_train_0.8_threshold_0.6_chrX.pkl")
+#X_brca_train = pd.read_pickle("../data/cna_brca_train_0.8_threshold_0.6_chrX.pkl")
+#y_brca_train = X_brca_train["Ciriello_subtype"]
+#X_brca_train.drop(['tcga_id', 'Ciriello_subtype'], axis="columns", inplace=True)
+
+X_brca_train = pd.read_pickle("../data/hybrids/tcga_brca_cna_mirna_meta_train.pkl")
 y_brca_train = X_brca_train["Ciriello_subtype"]
 X_brca_train.drop(['tcga_id', 'Ciriello_subtype'], axis="columns", inplace=True)
 
@@ -133,7 +147,7 @@ scores = []
 subtypes = ["Basal", "Her2", "LumA", "LumB", "Normal"]
 
 
-skf = StratifiedKFold(n_splits=5)
+skf = StratifiedKFold(n_splits=10)
 i=1
 classify_df = pd.DataFrame(columns=["Fold", "accuracy"])
 conf_matrix = np.zeros([5,5])
@@ -169,7 +183,7 @@ for train_index, test_index in skf.split(X_brca_train, y_brca_train):
 	cvae = CVAE(original_dim=X_autoencoder_train.shape[1], 
 					intermediate_dim=hidden_dim, 
 					latent_dim=latent_dim, 
-					cond_dim=34,
+					cond_dim=32,
 					epochs=epochs, 
 					batch_size=batch_size, 
 					learning_rate=learning_rate,
@@ -212,7 +226,7 @@ for train_index, test_index in skf.split(X_brca_train, y_brca_train):
 									y=y_labels_train_train, 
 									shuffle=True, 
 									epochs=100,
-									batch_size=50,
+									batch_size=64,
 									callbacks=[EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)],
 									validation_data=([X_train_val, X_train_val_tumor_type], y_labels_train_val))
 
@@ -243,11 +257,11 @@ for train_index, test_index in skf.split(X_brca_train, y_brca_train):
 	classify_df = classify_df.append({"Fold":str(i), "accuracy":score[1], "other_metrics":report}, ignore_index=True)
 	history_df = pd.DataFrame(fit_hist.history)
 
-	filename="../results/cna/CVAE/{}_hidden_{}_emb/history/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_history_{}_classifier_frozen_{}_cv_other_metrics.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, i, cvae.freeze_weights)
+	filename="../results/10-fold/miRNA+cna/CVAE/{}_hidden_{}_emb/history/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_history_{}_classifier_frozen_{}_cv_10_fold.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, i, cvae.freeze_weights)
 	history_df.to_csv(filename, sep=',')
 	i+=1
 
-print('5-Fold results: {}'.format(scores))
+print('10-Fold results: {}'.format(scores))
 print('Average accuracy: {}'.format(np.mean(scores)))
 
 
@@ -265,10 +279,10 @@ classify_df = classify_df.assign(classifier_use_z=classifier_use_z)
 classify_df = classify_df.assign(classifier_loss="categorical_crossentropy")
 classify_df = classify_df.assign(reconstruction_loss=reconstruction_loss)
 
-output_filename="../results/cna/CVAE/{}_hidden_{}_emb/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_classifier_frozen_{}_cv_other_metrics.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, cvae.freeze_weights)
+output_filename="../results/10-fold/miRNA+cna/CVAE/{}_hidden_{}_emb/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_classifier_frozen_{}_cv_10_fold.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss, cvae.freeze_weights)
 classify_df.to_csv(output_filename, sep=',')
 
-conf_filename="../results/cna/CVAE/{}_hidden_{}_emb/confusion_matrix/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_cv_confusion_matrix_other_metrics.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
+conf_filename="../results/10-fold/miRNA+cna/CVAE/{}_hidden_{}_emb/confusion_matrix/tcga_classifier_dropout_{}_in_{}_hidden_rec_loss_{}_cv_confusion_matrix_10_fold.csv".format(hidden_dim, latent_dim, dropout_input, dropout_hidden, reconstruction_loss)
 
 confs_matrix = pd.DataFrame(conf_matrix)
 confs_matrix.to_csv(conf_filename, sep=',')  
