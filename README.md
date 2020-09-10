@@ -5,8 +5,8 @@ In this scenario, we explore the potential of machine learning and, in particula
 Obtained results show simpler machine learning models to perform at least as well as (but not necessarily better than) the deep semi-supervised approaches on our task over RNA-seq gene expression data (in terms Accuracy). When multi-omic data types are combined together, performance of deep learning models show little (if any) improvement in terms of prediction accuracy, indicating the need for further analysis on larger datasets of multi-omic data as and when they become available.
 
 ## Source Code
-The source code used for the experiments can be found under the "src" directory (https://github.com/DEIB-GECO/brca_subtype/tree/master/src), with the model classes and scripts to train the models. 
-Under "notebooks" one can find several data exploration examples and standalone model experiments for quick prototyping (https://github.com/DEIB-GECO/brca_subtype/tree/master/notebooks).
+The source code used for the experiments can be found under the "src" directory (https://github.com/DEIB-GECO/brca_subtyping/tree/master/src), with the model classes and scripts to train the models. 
+Under "notebooks" one can find several data exploration examples and standalone model experiments for quick prototyping (https://github.com/DEIB-GECO/brca_subtyping/tree/master/notebooks).
 
 ## Funding
 This research is funded by the ERC Advanced Grant project 693174 GeCo (Data-Driven Genomic Computing), 2016-2021.
